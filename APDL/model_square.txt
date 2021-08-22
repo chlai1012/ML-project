@@ -17,19 +17,17 @@ y_filename = 'gt'! Ground truth image name (gt_length_height)
 
 ! Heat source
 lh_ival = 0.05 		! heat source length initial value
-lh_inc = 0.005		! heat source length increment
-lh_fval = 0.1		! heat source length final value
+lh_inc = 0.001		! heat source length increment
+lh_fval = 0.075		! heat source length final value
 hh_ival = 0.08		! heat source height initial value
-hh_inc = 0.002		! heat source height increment
+hh_inc = 0.0005		! heat source height increment
 hh_fval = 0.1		! heat source height final value
 
 
-
-
 !* Begin do loop
-!* heat source length
+!* heat source length loop
 *do, lh_i,lh_ival,lh_fval,lh_inc
-	!* heat source height
+	!* heat source height loop
 	*do, hh_i,hh_ival,hh_fval,hh_inc
 
 		!=========================================================
