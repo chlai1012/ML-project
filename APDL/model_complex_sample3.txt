@@ -16,25 +16,21 @@ x_filename = 'hs_sample3'! Heat source image name
 y_filename = 'gt_sample3'! Ground truth image name 
 
 ! Heat source
-wh_ival = 0.05 			! heat source width initial value
-wh_inc = 0.01				! heat source width increment
-wh_fval = 0.05				! heat source width final value
-hh_ival = 0.04 			! heat source height initial value
+wh_ival = 0.035 			! heat source width initial value
+wh_inc = 0.005				! heat source width increment
+wh_fval = 0.055				! heat source width final value
+hh_ival = 0.03 			! heat source height initial value
 hh_inc = 0.01				! heat source height increment
 hh_fval = 0.04				! heat source height final value
-sq_ival = 0.015 				! heat source square part width initial value
-sq_inc = 0.005			! heat source square part width increment
-sq_fval = 0.02		! heat source square part width final value
 
-wh_i = wh_ival
-hh_i = hh_ival
-sq_i = sq_ival
+!wh_i = wh_ival
+!hh_i = hh_ival
+!sq_i = sq_ival
 
 !* Begin do loop
 !* heat source length loop
-*do, wh_i,wh_ival,wh_fval,wh_inc
-	*do, hh_i,hh_ival,hh_fval,hh_inc
-		*do, sq_i,sq_ival,sq_fval,sq_inc
+*do, boundw,wh_ival,wh_fval,wh_inc
+	*do, boundh,hh_ival,hh_fval,hh_inc
 		!=========================================================
 		! 1) Preprocessing
 		!=========================================================
@@ -93,8 +89,6 @@ sq_i = sq_ival
 		RECTNG,,Lp,,Hp,
 		!* Create cut plates
 		ict=5
-		boundw = 0.035
-		boundh = 0.02
 		hsw = Lp-2*boundw
 		RECTNG,boundw,Lp-boundw,,Hp-boundh, 
 		*do, ict_i,1,ict-1,2
@@ -122,7 +116,7 @@ sq_i = sq_ival
 		/SHOW,CLOSE 
 		/DEVICE,VECTOR,0
 		!* Copy image
-		/copy,%jobname%000,png,,%x_filename%_%wh_i%_%hh_i%_%sq_i%,png
+		/copy,%jobname%000,png,,%x_filename%_%boundw%_%boundh%,png
 		!* Delete original image
 		/Delete,%jobname%000,png,,1
 
@@ -227,7 +221,7 @@ sq_i = sq_ival
 		!*  
 		PLNS,TEMP,
 		!* Animation  
-		ANTIME,180,0.2, ,1,2,0,180  
+		!ANTIME,180,0.2, ,1,2,0,180  
 		!*  
 		
 		!=========================================================
@@ -249,7 +243,7 @@ sq_i = sq_ival
 		/DEVICE,VECTOR,0
 		!* 
 		!* Copy image
-		/copy,%jobname%000,png,,%y_filename%_%wh_i%_%hh_i%_%sq_i%,png
+		/copy,%jobname%000,png,,%y_filename%_%boundw%_%boundh%,png
 		!* Delete original image
 		/Delete,%jobname%000,png,,1
 
@@ -259,7 +253,6 @@ sq_i = sq_ival
 		/clear
 		PARRES,,,, 
 
-		*enddo
 	*enddo
 *enddo
 		
