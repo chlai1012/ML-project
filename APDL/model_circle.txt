@@ -12,22 +12,31 @@ finish
 
 ! Image path
 jobname = 'DataGenerate'
-x_filename = 'hs'! Heat source image name  (hs_length_height)
-y_filename = 'gt'! Ground truth image name (gt_length_height)
+x_filename = 'hs_ellipse'! Heat source image name  (hs_length_height)
+y_filename = 'gt_ellipse'! Ground truth image name (gt_length_height)
 
 ! Heat source
-rh_ival = 0.025 			! heat source radius initial value
-rh_inc = 0.001				! heat source radius increment
-rh_fval = 0.05				! heat source radius final value
+wh_ival = 1.1 			! heat source ellipse width initial value(ratio)
+wh_inc = 0.1				! heat source ellipse width increment
+wh_fval = 1.5				! heat source ellipse width final value(ratio)
+hh_ival = 0.075 			! heat source ellipse height initial value
+hh_inc = 0.005				! heat source ellipse height increment
+hh_fval = 0.11				! heat source ellipse height final value
 off_ival = 0 				! heat source offset initial value
-off_inc = rh_inc			! heat source offset increment
-off_fval = 0!rh_ival/10		! heat source offset final value
+off_inc = 0.005			! heat source offset increment
+off_fval = 0.01				! heat source offset final value
+
+!wh_i = wh_ival
+!hh_i = hh_ival
+!off_i = off_ival
+!off_iter = 1
 
 !* Begin do loop
 !* heat source length loop
-*do, rh_i,rh_ival,rh_fval,rh_inc
+*do, wh_i,wh_ival,wh_fval,wh_inc
+	*do, hh_i,hh_ival,hh_fval,hh_inc
 	*do, off_i,off_ival,off_fval,off_inc
-		*do, off_iter,1,4,1
+		*do, off_iter,1,1,1
 		!=========================================================
 		! 1) Preprocessing
 		!=========================================================
@@ -100,7 +109,31 @@ off_fval = 0!rh_ival/10		! heat source offset final value
 		!* Create plate
 		RECTNG,,Lp,,Hp,  
 		!* Create heat source
-		CYL4,rdc_x,rdc_y,rh_i
+		!* Key points for ellipse
+		K,5,rdc_x,rdc_y-hh_i/2,,
+		K,6,rdc_x,rdc_y+hh_i/2,,
+		!* Create coordinate systems
+		LOCAL,11,1,rdc_x,rdc_y,0,,,,wh_i,1,  ! 
+		LOCAL,12,0,rdc_x,rdc_y,0,,,,1,1,    ! 
+		!* Create half ellipse
+		CSYS,11,
+		L,5,6
+		!* Reflect half ellipse
+		CSYS,12,
+		FLST,3,1,4,ORDE,1
+		FITEM,3,5
+		LSYMM,X,P51X,,,,0,0
+		!* Glue two ellipse
+		FLST,2,2,4,ORDE,2
+		FITEM,2,5
+		FITEM,2,-6
+		LGLUE,P51X
+		!* Create ellipse area
+		FLST,2,2,4
+		FITEM,2,7
+		FITEM,2,5
+		AL,P51X
+
 		!* Subtracts areas from areas  
 		ASBA,       1,       2 
 
@@ -119,23 +152,30 @@ off_fval = 0!rh_ival/10		! heat source offset final value
 		/SHOW,CLOSE 
 		/DEVICE,VECTOR,0
 		!* Copy image
-		/copy,%jobname%000,png,,%x_filename%_%rh_i%_%rdc_x%_%rdc_y%,png
+		/copy,%jobname%000,png,,%x_filename%_%wh_i%_%hh_i%_%off_i%_%off_iter%,png
 		!* Delete original image
 		/Delete,%jobname%000,png,,1
 
 		!* Recreate heat source part
-		CYL4,rdc_x,rdc_y,rh_i   
+		FLST,2,2,4   
+		FITEM,2,5   
+		FITEM,2,7
+		AL,P51X
+
+		!* Glue two areas  
 		FLST,2,2,5,ORDE,2   
 		FITEM,2,1   
-		FITEM,2,3   
-		AGLUE,P51X  		! Glue two areas
-		SMRT,2  			! Smart grid 2
+		FITEM,2,3 
+		AGLUE,P51X  
+
+		!* Smart grid 2		
+		SMRT,2  			
 		MSHAPE,0,2D 		! Area mesh
 		MSHKEY,0			! Free meshing
 		!*  
 		FLST,5,2,5,ORDE,2   
 		FITEM,5,1   
-		FITEM,5,-2  
+		FITEM,5,3  
 		CM,_Y,AREA  
 		ASEL, , , ,P51X 
 		CM,_Y1,AREA 
@@ -175,9 +215,9 @@ off_fval = 0!rh_ival/10		! heat source offset final value
 		! Define loads
 		!=========================================================
 		LPLOT   
-		FLST,2,4,4,ORDE,2   
-		FITEM,2,9 
-		FITEM,2,-12 
+		FLST,2,2,4,ORDE,2   
+		FITEM,2,5 
+		FITEM,2,7 
 		!*  
 		/GO 
 		DL,P51X, ,TEMP,180,0  ! Define heat source temperature
@@ -187,9 +227,9 @@ off_fval = 0!rh_ival/10		! heat source offset final value
 		/GO 
 		!*  
 		SFL,P51X,CONV,20, ,30, ! Define convection
-		FLST,2,2289,1,ORDE,2
+		FLST,2,2633,1,ORDE,2
 		FITEM,2,1   
-		FITEM,2,-2289   
+		FITEM,2,-2633   
 		IC,P51X,TEMP,30,
 
 		!=========================================================
@@ -228,7 +268,7 @@ off_fval = 0!rh_ival/10		! heat source offset final value
 		/DEVICE,VECTOR,0
 		!* 
 		!* Copy image
-		/copy,%jobname%000,png,,%y_filename%_%rh_i%_%rdc_x%_%rdc_y%,png
+		/copy,%jobname%000,png,,%y_filename%_%wh_i%_%hh_i%_%off_i%_%off_iter%,png
 		!* Delete original image
 		/Delete,%jobname%000,png,,1
 
@@ -239,7 +279,7 @@ off_fval = 0!rh_ival/10		! heat source offset final value
 		PARRES,,,, 
 
 
-
+		*enddo
 		*enddo
 	*enddo
 *enddo
