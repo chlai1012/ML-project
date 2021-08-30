@@ -26,9 +26,9 @@ sq_ival = 0.01 				! heat source square part width initial value
 sq_inc = 0.01			! heat source square part width increment
 sq_fval = 0.03		! heat source square part width final value
 
-wh_i = wh_ival
-hh_i = hh_ival
-sq_i = sq_ival
+!wh_i = wh_ival
+!hh_i = hh_ival
+!sq_i = sq_ival
 
 !* Begin do loop
 !* heat source length loop
