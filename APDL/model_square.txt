@@ -16,12 +16,20 @@ x_filename = 'hs'! Heat source image name  (hs_length_height)
 y_filename = 'gt'! Ground truth image name (gt_length_height)
 
 ! Heat source
-lh_ival = 0.05 		! heat source length initial value
-lh_inc = 0.001		! heat source length increment
-lh_fval = 0.075		! heat source length final value
-hh_ival = 0.08		! heat source height initial value
-hh_inc = 0.0005		! heat source height increment
+lh_ival = 0.01 		! heat source length initial value
+lh_inc = 0.02		! heat source length increment
+lh_fval = 0.025		! heat source length final value
+hh_ival = 0.05		! heat source height initial value
+hh_inc = 0.005		! heat source height increment
 hh_fval = 0.1		! heat source height final value
+off_ival = 0 				! heat source offset initial value
+off_inc = 0.005			! heat source offset increment
+off_fval = 0.02				! heat source offset final value
+
+!lh_i = lh_ival
+!hh_i = hh_ival
+!off_i = off_ival
+!off_iter = 1
 
 
 !* Begin do loop
@@ -29,6 +37,8 @@ hh_fval = 0.1		! heat source height final value
 *do, lh_i,lh_ival,lh_fval,lh_inc
 	!* heat source height loop
 	*do, hh_i,hh_ival,hh_fval,hh_inc
+		*do, off_i,off_ival,off_fval,off_inc
+		*do, off_iter,1,2,1
 
 		!=========================================================
 		! 1) Preprocessing
@@ -46,6 +56,13 @@ hh_fval = 0.1		! heat source height final value
 		! Plate
 		Lp = 0.2			! plate length
 		Hp = 0.15			! plate height
+
+		! Square center
+		*if,off_iter,EQ,1,THEN
+			rdc_x = Lp/2+off_i
+		*else,off_iter,EQ,2
+			rdc_x = Lp/2-off_i
+		*endif
 
 		!*  
 		ET,1,PLANE77
@@ -88,7 +105,7 @@ hh_fval = 0.1		! heat source height final value
 		!* Create plate
 		RECTNG,,Lp,,Hp,  
 		!* Create heat source
-		RECTNG,(Lp-lh_i)/2,(Lp-lh_i)/2+lh_i,0,hh_i, 
+		RECTNG,(rdc_x-lh_i/2),(rdc_x-lh_i/2)+lh_i,0,hh_i, 
 		!* Subtracts areas from areas  
 		ASBA,       1,       2 
 
@@ -107,12 +124,12 @@ hh_fval = 0.1		! heat source height final value
 		/SHOW,CLOSE 
 		/DEVICE,VECTOR,0
 		!* Copy image
-		/copy,%jobname%000,png,,%x_filename%_%lh_i%_%hh_i%,png
+		/copy,%jobname%000,png,,%x_filename%_%lh_i%_%hh_i%_%off_i%_%off_iter%,png
 		!* Delete original image
 		/Delete,%jobname%000,png,,1
 
 		!* Recreate heat source part
-		RECTNG,(Lp-lh_i)/2,(Lp-lh_i)/2+lh_i,0,hh_i,   
+		RECTNG,(rdc_x-lh_i/2),(rdc_x-lh_i/2)+lh_i,0,hh_i, 
 		FLST,2,2,5,ORDE,2   
 		FITEM,2,1   
 		FITEM,2,3   
@@ -219,7 +236,7 @@ hh_fval = 0.1		! heat source height final value
 		/DEVICE,VECTOR,0
 		!* 
 		!* Copy image
-		/copy,%jobname%000,png,,%y_filename%_%lh_i%_%hh_i%,png
+		/copy,%jobname%000,png,,%y_filename%_%lh_i%_%hh_i%_%off_i%_%off_iter%,png
 		!* Delete original image
 		/Delete,%jobname%000,png,,1
 
@@ -229,6 +246,8 @@ hh_fval = 0.1		! heat source height final value
 		/clear
 		PARRES,,,, 
 
+		*enddo
+		*enddo
 	*enddo
 *enddo
 		

@@ -1,0 +1,258 @@
+!**************************************************
+!     ANSYS ML Project Data Generate                
+!      Chin-Han Lai: 06.08.2021
+!**************************************************
+ 
+! Note: All (!) units are in [ kN, m, s ]
+
+! clear data base
+finish
+/clear
+
+
+! Image path
+jobname = 'DataGenerate'
+x_filename = 'hs_sample3'! Heat source image name
+y_filename = 'gt_sample3'! Ground truth image name 
+
+! Heat source
+wh_ival = 0.035 			! heat source width initial value
+wh_inc = 0.005				! heat source width increment
+wh_fval = 0.055				! heat source width final value
+hh_ival = 0.03 			! heat source height initial value
+hh_inc = 0.01				! heat source height increment
+hh_fval = 0.04				! heat source height final value
+
+!wh_i = wh_ival
+!hh_i = hh_ival
+!sq_i = sq_ival
+
+!* Begin do loop
+!* heat source length loop
+*do, boundw,wh_ival,wh_fval,wh_inc
+	*do, boundh,hh_ival,hh_fval,hh_inc
+		!=========================================================
+		! 1) Preprocessing
+		!=========================================================
+
+		! open preprocessors
+		/PREP7
+
+		! INPUT
+		! Material
+		Tc = 52 ! Thermal conductivity (W/(mC))
+		Sh = 447 ! Specific heat (J/(kgC))
+		rho = 7800 ! Density
+		! Geometry
+		! Plate
+		Lp = 0.2			! plate length
+		Hp = 0.15			! plate height
+		!*  
+		ET,1,PLANE77
+		!*  
+		!*  
+		MPTEMP,,,,,,,,  
+		MPTEMP,1,0  
+		MPDATA,KXX,1,,Tc   
+		MPTEMP,,,,,,,,  
+		MPTEMP,1,0  
+		MPDATA,C,1,,Sh 
+		MPTEMP,,,,,,,,  
+		MPTEMP,1,0  
+		MPDATA,DENS,1,,rho
+
+		!* View settings
+		/TYPE,1,6   
+		/SHADE,1,1  
+		/PLOPTS,INFO,0  
+		/PLOPTS,LEG1,0  
+		/PLOPTS,LEG2,0  
+		/PLOPTS,LEG3,0  
+		/PLOPTS,FRAME,0 
+		/PLOPTS,TITLE,0 
+		/PLOPTS,MINM,0  
+		/PLOPTS,FILE,0  
+		/PLOPTS,SPNO,0 
+		/PLOPTS,WINS,1  
+		/PLOPTS,WP,0
+		/PLOPTS,DATE,2  
+		/TRIAD,OFF 
+		/REPLOT 
+
+
+
+		!=========================================================
+		! Geometry+Mesh
+		!=========================================================
+		
+		!* Create plate
+		RECTNG,,Lp,,Hp,
+		!* Create cut plates
+		ict=5
+		hsw = Lp-2*boundw
+		RECTNG,boundw,Lp-boundw,,Hp-boundh, 
+		*do, ict_i,1,ict-1,2
+			RECTNG,boundw+ict_i*hsw/ict,boundw+(ict_i+1)*hsw/ict,boundh,Hp-boundh,
+		*enddo
+		!* Subtract areas
+		FLST,3,2,5,ORDE,2   
+		FITEM,3,3   
+		FITEM,3,-4
+		ASBA,2,P51X
+		ASBA,1,5
+
+		!* Save plot
+		/CONT,1,9,30, ,180  
+		/REPLOT 
+		!* 
+		/SHOW,PNG,,0
+		PNGR,COMP,1,1   
+		PNGR,ORIENT,HORIZ   
+		PNGR,COLOR,2
+		PNGR,TMOD,1 
+		/GFILE,800, 
+		!*  
+		/REPLOT 
+		/SHOW,CLOSE 
+		/DEVICE,VECTOR,0
+		!* Copy image
+		/copy,%jobname%000,png,,%x_filename%_%boundw%_%boundh%,png
+		!* Delete original image
+		/Delete,%jobname%000,png,,1
+
+		!* Rereate cut plates
+		RECTNG,boundw,Lp-boundw,,Hp-boundh, 
+		*do, ict_i,1,ict-1,2
+			RECTNG,boundw+ict_i*hsw/ict,boundw+(ict_i+1)*hsw/ict,boundh,Hp-boundh,
+		*enddo
+		FLST,3,2,5,ORDE,2   
+		FITEM,3,3   
+		FITEM,3,-4 
+		ASBA,1,P51X
+		!* Glue two areas
+		FLST,2,2,5,ORDE,2   
+		FITEM,2,2   
+		FITEM,2,5 
+		AGLUE,P51X
+
+		!* Mesh
+		SMRT,2  			! Smart grid 2
+		MSHAPE,0,2D 		! Area mesh
+		MSHKEY,0			! Free meshing
+		!*  
+		FLST,5,2,5,ORDE,2   
+		FITEM,5,1   
+		FITEM,5,-2  
+		CM,_Y,AREA  
+		ASEL, , , ,P51X 
+		CM,_Y1,AREA 
+		CHKMSH,'AREA'   
+		CMSEL,S,_Y  
+		!*  
+		AMESH,_Y1   
+		!*  
+		CMDELE,_Y   
+		CMDELE,_Y1  
+		CMDELE,_Y2  
+		!*  
+		/UI,MESH,OFF
+
+		!=========================================================
+		! Solution setting
+		!=========================================================
+		FINISH  
+		/SOL
+		!*  
+		ANTYPE,4
+		!* 
+		NROPT,AUTO 
+		TRNOPT,FULL 
+		LUMPM,0 
+		!*  
+		DELTIM,1,0.5,1.25   
+		OUTRES,ERASE
+		OUTRES,ALL,1
+		KBC,1.0 
+		LNSRCH,1
+		NEQIT,100   
+		TIME,180
+		TIMINT,1
+
+		!=========================================================
+		! Define loads
+		!=========================================================
+		LPLOT   
+		FLST,2,11,4,ORDE,7   
+		FITEM,2,6 
+		FITEM,2,8 
+		FITEM,2,-10 
+		FITEM,2,12
+		FITEM,2,-14 
+		FITEM,2,16
+		FITEM,2,-19
+		!*  
+		/GO 
+		DL,P51X, ,TEMP,180,0  ! Define heat source temperature
+		FLST,2,6,4,ORDE,5   
+		FITEM,2,2   
+		FITEM,2,-4
+		FITEM,2,7
+		FITEM,2,11
+		FITEM,2,15
+		/GO 
+		!*  
+		SFL,P51X,CONV,20, ,30, ! Define convection
+		FLST,2,2351,1,ORDE,2
+		FITEM,2,1   
+		FITEM,2,-2351   
+		IC,P51X,TEMP,30,
+
+		!=========================================================
+		! Solution
+		!=========================================================
+		/STATUS,SOLU
+		SOLVE   
+		FINISH
+
+		!=========================================================
+		! Postproc
+		!=========================================================
+		/POST1  
+		!*  
+		PLNS,TEMP,
+		!* Animation  
+		!ANTIME,180,0.2, ,1,2,0,180  
+		!*  
+		
+		!=========================================================
+		! Save plot
+		!=========================================================
+		!*  
+		/CONT,1,9,30, ,180  
+		/REPLOT 
+		!* 
+		/SHOW,PNG,,0
+		PNGR,COMP,1,1   
+		PNGR,ORIENT,HORIZ   
+		PNGR,COLOR,2
+		PNGR,TMOD,1 
+		/GFILE,800, 
+		!*  
+		/REPLOT 
+		/SHOW,CLOSE 
+		/DEVICE,VECTOR,0
+		!* 
+		!* Copy image
+		/copy,%jobname%000,png,,%y_filename%_%boundw%_%boundh%,png
+		!* Delete original image
+		/Delete,%jobname%000,png,,1
+
+		FINISH
+
+		PARSAV,,,,
+		/clear
+		PARRES,,,, 
+
+	*enddo
+*enddo
+		
